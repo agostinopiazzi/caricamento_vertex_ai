@@ -1,0 +1,4 @@
+@dsl.pipeline(
+    name="@pipeline_name@",
+)
+def @pipeline_function_name@():
