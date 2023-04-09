@@ -1,0 +1,68 @@
+from kfp.v2.dsl import component
+
+
+@component(
+    base_image=@base_image@,
+    output_component_file=@output_component_file@,
+    packages_to_install=@packages_to_install@
+)
+def load_data_from_bucket():
+
+    import re
+    import google.cloud.dataproc_v1 as dataproc
+    import google.cloud.storage as storage
+
+    project_id = @project_id@
+    region = @region@
+    cluster_name = @cluster_name@
+    uri_custom_image = @uri_custom_image@
+    properties_file_path = @properties_file_path@
+    main_python_file_uri = @main_python_file_uri@
+    extra_py_file_path = @extra_py_file_path@
+    input_files_paths = @input_files_paths@
+    output_file_path = @output_file_path@
+
+    all_in_out_paths = input_files_paths + [output_file_path]
+    all_in_out_paths.sort(key=lambda x: x.split('/')[-1])
+
+    # Create the job client.
+    job_client = dataproc.JobControllerClient(
+        client_options={"api_endpoint": "{}-dataproc.googleapis.com:443".format(region)}
+    )
+
+    # Create the job config. 'main_jar_file_uri' can also be a
+    # Google Cloud Storage URL.
+    job = {
+        'placement': {
+            'cluster_name': cluster_name
+        },
+        'pyspark_job': {
+            'main_python_file_uri': main_python_file_uri,
+            'properties':{
+                "spark.kubernetes.container.image": uri_custom_image
+            },
+            'properties-file': properties_file_path,
+            'py-files': extra_py_file_path
+            'args': all_in_out_paths
+        }
+    }
+
+    operation = job_client.submit_job_as_operation(
+        request={"project_id": project_id, "region": region, "job": job}
+    )
+    response = operation.result()
+
+    # Dataproc job output gets saved to the Google Cloud Storage bucket
+    # allocated to the job. Use a regex to obtain the bucket and blob info.
+    matches = re.match("gs://(.*?)/(.*)", response.driver_output_resource_uri)
+
+    output = (
+        storage.Client()
+        .get_bucket(matches.group(1))
+        .blob(f"{matches.group(2)}.000000000")
+        .download_as_string()
+    )
+
+    print(f"Job finished successfully: {output}")
+
+
