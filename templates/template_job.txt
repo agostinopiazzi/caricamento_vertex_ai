@@ -1,12 +1,17 @@
 from kfp.v2.dsl import component
-
+import os
 
 @component(
     base_image="@base_image@",
     output_component_file="@output_component_file@",
     packages_to_install=@packages_to_install@
 )
-def load_data_from_bucket():
+def @function_name@(
+    input_folder_path,
+    output_folder_path,
+    main_python_file_folder_path,
+    helper_module_folder_path
+    ):
 
     import re
     import google.cloud.dataproc_v1 as dataproc
@@ -17,10 +22,11 @@ def load_data_from_bucket():
     cluster_name = "@cluster_name@"
     uri_custom_image = "@uri_custom_image@"
     properties_file_path = "@properties_file_path@"
-    main_python_file_uri = "@main_python_file_uri@"
-    extra_py_file_path = "@extra_py_file_path@"
-    input_files_paths = @input_files_paths@
-    output_file_path = "@output_file_path@"
+    extra_py_file_path = os.path.join(helper_module_folder_path, "@extra_py_file_name@")
+
+    main_python_file_uri = os.path.join(main_python_file_folder_path, "@pyfile_name@")
+    input_files_paths = [os.path.join(input_folder_path, path) for path in @input_files_paths@]
+    output_file_path = os.path.join(output_folder_path, "@output_file_path@")
 
     all_in_out_paths = input_files_paths + [output_file_path]
     all_in_out_paths.sort(key=lambda x: x.split('/')[-1])

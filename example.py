@@ -3,10 +3,10 @@ from kfp.v2.dsl import component
 
 @component(
     base_image="python:3.9",
-    output_component_file="load_data_from_bucket.yaml",
+    output_component_file="test_job.yaml",
     packages_to_install=["google-cloud-storage", "google-cloud-dataproc"]
 )
-def load_data_from_bucket():
+def test_job():
 
     import re
     import google.cloud.dataproc_v1 as dataproc
@@ -27,7 +27,7 @@ def load_data_from_bucket():
 
     # Create the job client.
     job_client = dataproc.JobControllerClient(
-        client_options={"api_endpoint": "{}-dataproc.googleapis.com:443".format(region)}
+        client_options = {"api_endpoint": "{}-dataproc.googleapis.com:443".format(region)}
     )
 
     # Create the job config. 'main_jar_file_uri' can also be a
@@ -38,7 +38,7 @@ def load_data_from_bucket():
         },
         'pyspark_job': {
             'main_python_file_uri': main_python_file_uri,
-            'properties':{
+            'properties': {
                 "spark.kubernetes.container.image": uri_custom_image
             },
             'properties-file': properties_file_path,
@@ -48,7 +48,7 @@ def load_data_from_bucket():
     }
 
     operation = job_client.submit_job_as_operation(
-        request={"project_id": project_id, "region": region, "job": job}
+        request = {"project_id": project_id, "region": region, "job": job}
     )
     response = operation.result()
 
