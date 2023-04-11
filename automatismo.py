@@ -24,12 +24,14 @@ def clear_folder(folder_path):
 
 def generate_job_pyfiles(df, job_pyfiles_folder, template_folder_path):
     start = time.time()
+    df.columns = [re.sub(' ', '_', col) for col in df.columns]
 
     project_id = "bper-ai-ew-test-380011"
     region = "europe-west4"
     cluster_name = "bper-ai-dataproc-cluster"
     uri_custom_image = "europe-west4-docker.pkg.dev/bper-ai-ew-test-380011/nomerepository2/nometag3:latest"
-    extra_py_file_name = "helper_module.py"
+
+
 
     base_image = "python:3.9"
     packages_to_install = "[\"google-cloud-storage\", \"google-cloud-dataproc\"]"
@@ -50,7 +52,7 @@ def generate_job_pyfiles(df, job_pyfiles_folder, template_folder_path):
             output_component_file = f"{dt_name}.yaml"
             function_name = dt_name
             pyfile_name = function_name + ".py"
-            properties_file_path = tpl.Spark_Par + ".txt"
+            spark_properties_file_name = tpl.Spark_Par + ".txt"
             input_files_paths = tpl.DS_input_list
             output_file_path = tpl.Output_dataset_MP
 
@@ -58,8 +60,7 @@ def generate_job_pyfiles(df, job_pyfiles_folder, template_folder_path):
             lines = check_replace('@region@', region, lines)
             lines = check_replace('@cluster_name@', cluster_name, lines)
             lines = check_replace('@uri_custom_image@', uri_custom_image, lines)
-            lines = check_replace('@properties_file_path@', properties_file_path, lines)
-            lines = check_replace('@extra_py_file_name@', extra_py_file_name, lines)
+            lines = check_replace('@spark_properties_file_name@', spark_properties_file_name, lines)
             lines = check_replace('@packages_to_install@', packages_to_install, lines)
             lines = check_replace('@base_image@', base_image, lines)
             lines = check_replace('@output_component_file@', output_component_file, lines)
@@ -83,57 +84,30 @@ def generate_job_pyfiles(df, job_pyfiles_folder, template_folder_path):
 
 # task_name ---> layer of execution
 
-def generate_pipeline_file(df_area, start_inputs, pipeline_pyfile_folder, template_folder_path):
+def generate_pipeline_file(df_area, pipeline_pyfile_folder, template_folder_path, pyfile_name):
 
+    df.columns = [re.sub(' ', '_', col) for col in df.columns]
 
-
-    df_area['inserted'] = False
-    ready_inputs = start_inputs
-    layer = 1
-    pyfile_name = 'pipeline.py'
-    initial_shape = df_area.shape[0]
-    stall = False
+    # build support dict
+    support_dict = {}
+    for tpl in df_area.itertuples():
+        support_dict[tpl.Output_dataset_MP] = tpl.Nome_transform_in_MP
 
     with open(os.path.join(template_folder_path, "template_pipeline.txt"), 'r', encoding='utf8') as source:
         lines = source.readlines()
+        for tpl in df_area.itertuples():
+            job_function_name = tpl.Nome_transform_in_MP
+            job_variable_name = job_function_name +'_var'
+            lines.append(f'\n\t# {job_function_name}\n')
+            lines.append(f'\t{job_variable_name } = {job_function_name}()\n')
+            inputs = tpl.DS_input_list.strip('][').replace("\'","").split(', ')
+            for input in inputs:
+                if input in support_dict:
+                    lines.append(f'\t{job_variable_name}.after({support_dict[input]})\n')
 
-        while not df_area['inserted'].all():
-
-            if stall:
-                print('WARNING, while loop in stall')
-                input('continue?')
-                break
-
-
-            df_area = df_area.loc[~df_area['inserted'], :].copy()
-            print(f'building layer {layer}, jobs inserted: {initial_shape - df_area.shape[0]} / {initial_shape}')
-            stall = True
-            lines.append('\n')
-            lines.append(f'\t# layer {layer}\n')
-            for tpl in df_area.itertuples():
-                inputs = tpl.DS_input_list
-                inputs = inputs.strip('][').replace("\'","").split(', ') # todo vedere stringhe per sicurezza
-                job_name = tpl.Nome_transform_in_MP
-                job_function_name = tpl.Nome_transform_in_MP
-
-
-                if set(inputs).issubset(set(ready_inputs)):
-                    ready_inputs.append(tpl.Output_dataset_MP)
-                    df_area.at[tpl.Index, 'inserted'] = True
-                    if layer == 1:
-                        lines.append(f'\t{job_name} = {job_function_name}()\n')
-                    else:
-                        lines.append(f'\t{job_name}().after({memorized_last_job})\n')
-                    stall = False
-                    last_job_ready = job_name
-
-            memorized_last_job = last_job_ready
-            layer += 1
-
-
-        with open(os.path.join(pipeline_pyfile_folder, pyfile_name), 'w', encoding='utf8') as target:
-            lines = ''.join(lines)
-            target.write(lines)
+    with open(os.path.join(pipeline_pyfile_folder, pyfile_name), 'w', encoding='utf8') as target:
+        lines = ''.join(lines)
+        target.write(lines)
 
 
 
@@ -152,11 +126,11 @@ def generate_pipeline_file(df_area, start_inputs, pipeline_pyfile_folder, templa
 if __name__=='__main__':
     df = pd.read_excel("Pipeline.xlsx", sheet_name="Data Transform MP")
     # todo inserire eventuale mappatura tipi per il caricamento da excel
-    df.columns = [re.sub(' ', '_', col) for col in df.columns]
+
 
     job_pyfiles_folder = './job_pyfiles'
     template_folder_path = './templates'
-    #generate_job_pyfiles(df, job_pyfiles_folder, template_folder_path)
+    generate_job_pyfiles(df, job_pyfiles_folder, template_folder_path)
 
     pipeline_pyfile_folder = './pipeline_pyfiles'
 
@@ -168,4 +142,4 @@ if __name__=='__main__':
     clear_folder(pipeline_pyfile_folder)
 
 
-    generate_pipeline_file(df, start_inputs, pipeline_pyfile_folder, template_folder_path)
+    #generate_pipeline_file(df, pipeline_pyfile_folder, template_folder_path, 'pipeline_test.py')
