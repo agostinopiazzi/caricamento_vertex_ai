@@ -1,4 +1,9 @@
 @dsl.pipeline(
     name="@pipeline_name@",
 )
-def @pipeline_function_name@():
+def @pipeline_function_name@(input_folder_path,
+    output_folder_path,
+    main_python_file_folder_path,
+    spark_properties_folder_path,
+    helper_module_file_path
+    ):

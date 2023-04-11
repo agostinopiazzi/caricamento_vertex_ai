@@ -88,6 +88,8 @@ def generate_pipeline_file(df_area, pipeline_pyfile_folder, template_folder_path
 
     df.columns = [re.sub(' ', '_', col) for col in df.columns]
 
+    pipeline_name = 'test_pipeline'
+    pipeline_function_name = 'test_pipeline_function'
     # build support dict
     support_dict = {}
     for tpl in df_area.itertuples():
@@ -95,18 +97,33 @@ def generate_pipeline_file(df_area, pipeline_pyfile_folder, template_folder_path
 
     with open(os.path.join(template_folder_path, "template_pipeline.txt"), 'r', encoding='utf8') as source:
         lines = source.readlines()
+
+        initial_lines = []
+
+        for tpl in df_area.itertuples():
+            job_function_name = tpl.Nome_transform_in_MP
+            initial_lines.append(f'from ..job_pyfiles import {job_function_name}\n')
+        initial_lines.append('\n\n')
+        lines = initial_lines + lines
+
         for tpl in df_area.itertuples():
             job_function_name = tpl.Nome_transform_in_MP
             job_variable_name = job_function_name +'_var'
             lines.append(f'\n\t# {job_function_name}\n')
-            lines.append(f'\t{job_variable_name } = {job_function_name}()\n')
+            lines.append(f'\t{job_variable_name } = {job_function_name}(input_folder_path, output_folder_path,'
+                         f' main_python_file_folder_path, spark_properties_folder_path, helper_module_file_path)\n')
             inputs = tpl.DS_input_list.strip('][').replace("\'","").split(', ')
             for input in inputs:
                 if input in support_dict:
                     lines.append(f'\t{job_variable_name}.after({support_dict[input]})\n')
 
+    lines = ''.join(lines)
+
+    lines = check_replace('@pipeline_name@', pipeline_name, lines)
+    lines = check_replace('@pipeline_function_name@', pipeline_function_name, lines)
+
     with open(os.path.join(pipeline_pyfile_folder, pyfile_name), 'w', encoding='utf8') as target:
-        lines = ''.join(lines)
+
         target.write(lines)
 
 
@@ -130,7 +147,7 @@ if __name__=='__main__':
 
     job_pyfiles_folder = './job_pyfiles'
     template_folder_path = './templates'
-    generate_job_pyfiles(df, job_pyfiles_folder, template_folder_path)
+    #generate_job_pyfiles(df, job_pyfiles_folder, template_folder_path)
 
     pipeline_pyfile_folder = './pipeline_pyfiles'
 
@@ -142,4 +159,4 @@ if __name__=='__main__':
     clear_folder(pipeline_pyfile_folder)
 
 
-    #generate_pipeline_file(df, pipeline_pyfile_folder, template_folder_path, 'pipeline_test.py')
+    generate_pipeline_file(df, pipeline_pyfile_folder, template_folder_path, 'pipeline_test.py')
