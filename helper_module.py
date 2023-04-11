@@ -1,6 +1,7 @@
 import sys
 from typing import Optional
 
+
 def get_input(sc, input_name:str, read_kwargs:Optional[dict] = None):
     list = sys.argv[1:-1]
     list = list.sort(key=lambda x: x.split('/')[-1])
