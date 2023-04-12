@@ -264,25 +264,29 @@ def save_code(push_kwargs: dict, proj_dict: dict, code: list): # -> tuple[Option
     try:
         # writing first lines of code
         first_lines = list()
-        first_lines.append("import sys")
-        first_lines.append('sys.path = [x for x in sys.path if "shr/tmp" not in x]')
-        first_lines.append('from pythokerlib.spark.functions import get_input, set_output')
-        first_lines.append('from pythokerlib.functions import get_parameters')
-        first_lines.append('spark = SparkSession.builder.getOrCreate()')
-        #for key, value in push_kwargs['_input_dict'].items():
-        #    if value in proj_dict[push_kwargs['pj_pk']]:
-        #        first_lines.append('{} = get_input({}, spark=spark)'.format(key, "\"" + value + "_0_0\""))
-        #    else:
-        #        print(f"WARNING: input {value} not in project {push_kwargs['pj_pk']}")
+        first_lines.append('from helper_module import get_input,set_output')
+        first_lines.append('import sys')
+        first_lines.append('import pyspark')
 
-        first_lines.append('spark.sparkContext.setCheckpointDir("{}")'.format(push_kwargs['checkpoint_path']))
-        first_lines.append('sc = spark.sparkContext')
-        first_lines.append('sc.setLogLevel("WARN")')
-        first_lines.append(r'APPLICATION_GLOBALS = get_parameters("APPLICATION_GLOBALS")')
-        first_lines.append('RUN_ON_MP = APPLICATION_GLOBALS.RUN_ON_MP')
-        first_lines.append('APPLICATION = APPLICATION_GLOBALS.APPLICATION')
-        first_lines.append('CHECKS = APPLICATION_GLOBALS.CHECKS')
-        first_lines.append('app_date = APPLICATION_GLOBALS.APP_DATE')
+        first_lines.append('\n')
+        first_lines.append('sc = pyspark.SparkContext()')
+        for key, value in push_kwargs['_input_dict'].items():
+            #first_lines.append('{} = get_input({}, spark=spark)'.format(key, "\"" + value + "_0_0\""))
+            first_lines.append(f'{key} = get_input(sc, \'{value}\')')
+        #first_lines.append("import sys")
+        #first_lines.append('sys.path = [x for x in sys.path if "shr/tmp" not in x]')
+        #first_lines.append('from pythokerlib.spark.functions import get_input, set_output')
+        #first_lines.append('from pythokerlib.functions import get_parameters')
+        #first_lines.append('spark = SparkSession.builder.getOrCreate()')
+#
+        #first_lines.append('spark.sparkContext.setCheckpointDir("{}")'.format(push_kwargs['checkpoint_path']))
+        #first_lines.append('sc = spark.sparkContext')
+        #first_lines.append('sc.setLogLevel("WARN")')
+        #first_lines.append(r'APPLICATION_GLOBALS = get_parameters("APPLICATION_GLOBALS")')
+        #first_lines.append('RUN_ON_MP = APPLICATION_GLOBALS.RUN_ON_MP')
+        #first_lines.append('APPLICATION = APPLICATION_GLOBALS.APPLICATION')
+        #first_lines.append('CHECKS = APPLICATION_GLOBALS.CHECKS')
+        #first_lines.append('app_date = APPLICATION_GLOBALS.APP_DATE')
         first_lines = ['\n'.join(first_lines)]
 
         # writing last lines of code

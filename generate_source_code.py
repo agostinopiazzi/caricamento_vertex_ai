@@ -2,7 +2,6 @@ import pandas as pd
 import re
 import os
 import time
-from pathlib import Path
 
 
 def check_replace(str_to_replace: str, replace_string:str, lines:str) -> str:
@@ -25,6 +24,7 @@ def check_replace(str_to_replace: str, replace_string:str, lines:str) -> str:
         input('continue?')
     return lines
 
+
 def check_non_replaced_markers(lines):
     # define the pattern
     pattern = r"@\S+?@"
@@ -35,8 +35,6 @@ def check_non_replaced_markers(lines):
     if found_match:
         print(f"WARNING: {found_match.group()} not replaced in template")
         input('continue?')
-
-
 
 
 def clear_folder(folder_path):
@@ -133,10 +131,6 @@ def generate_job_pyfiles(df, job_pyfiles_folder, template_folder_path):
 
     print(f"job pyfiles generated in: {round(end - start, 2)} seconds")
 
-
-# key --> df_name  value --> task_name
-
-# task_name ---> layer of execution
 
 def generate_pipeline_file(area, df_area, pipeline_pyfile_folder, template_folder_path, pyfile_name):
 
