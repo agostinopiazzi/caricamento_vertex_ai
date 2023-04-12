@@ -1,5 +1,4 @@
 from kfp.v2.dsl import component
-import os
 
 @component(
     base_image="@base_image@",
@@ -17,6 +16,7 @@ def @function_name@(
     import re
     import google.cloud.dataproc_v1 as dataproc
     import google.cloud.storage as storage
+    import os
 
     project_id = "@project_id@"
     region = "@region@"

@@ -1,3 +1,5 @@
+from kfp import dsl
+
 @dsl.pipeline(
     name="@pipeline_name@",
 )
