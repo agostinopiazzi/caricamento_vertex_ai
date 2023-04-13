@@ -9,7 +9,7 @@ def make_node(
             output_file_path: str,
             base_image: str,
             output_component_file: str,
-            packages_to_install: str
+            packages_to_install: list
             ):
 
     def _job_func(

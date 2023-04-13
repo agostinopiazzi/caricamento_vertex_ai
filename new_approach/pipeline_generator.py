@@ -2,6 +2,7 @@ from kfp import dsl
 from job_generator import make_node
 import os
 
+
 def make_pipeline(
         # pipeline specific arguments
         pipeline_name,
@@ -22,10 +23,9 @@ def make_pipeline(
             cluster_name: str,
             region: str,
             uri_custom_image: str
-        ):
+            ):
 
-        job_tasks_dict = {}
-
+        # iterating on all the jobs in the area
         for job_key, job_dict in area_dict.items():
 
             job_name = job_dict['name']
@@ -61,7 +61,6 @@ def make_pipeline(
             for ancestor in job_dict['ancestors']:
                 if ancestor in area_dict:
                     job_dict['object'][0].after(area_dict[ancestor]['object'][0])
-
 
     return _pipeline_func
 
