@@ -2,3 +2,5 @@ pandas
 openpyxl
 pyyaml
 nbformat
+google-cloud-aiplatform==1.0.0
+kfp google-cloud-pipeline-components==1.0.8
